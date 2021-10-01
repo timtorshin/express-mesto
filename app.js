@@ -2,9 +2,22 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
-
+const validator = require('validator');
+const { celebrate, Joi, errors } = require('celebrate');
+const { login, createUser } = require('./controllers/users');
+const auth = require('./middlewares/auth');
+const error = require('./middlewares/error');
+const NotFoundError = require('./utils/NotFoundError');
 const userRouter = require('./routes/users');
 const cardRouter = require('./routes/cards');
+
+const validEmail = (value) => {
+  const result = validator.isEmail(value);
+  if (result) {
+    return value;
+  }
+  throw new Error('Введён некорректный email');
+};
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -16,22 +29,32 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '614320f066dd38182dd6762b',
-  };
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().custom(validEmail),
+    password: Joi.string().required(),
+  }),
+}), login);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().custom(validEmail),
+    password: Joi.string().required(),
+  }),
+}), createUser);
 
-  next();
-});
+app.use(auth);
 
 // http://localhost:3000/users
 app.use('/users', userRouter);
 // http://localhost:3000/cards
 app.use('/cards', cardRouter);
 // non-existent route
-app.use('*', (req, res) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+app.use('*', () => {
+  throw new NotFoundError('Запрашиваемый ресурс не найден');
 });
+
+app.use(errors());
+app.use(error);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
