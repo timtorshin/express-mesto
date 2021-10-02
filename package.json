@@ -2,7 +2,7 @@
   "name": "express-mesto",
   "author": "Timofei Torshin",
   "version": "1.0.0",
-  "description": "",
+  "description": "Бэкенд проекта Mesto",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
