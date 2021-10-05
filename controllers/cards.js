@@ -27,18 +27,17 @@ module.exports.deleteCardId = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
+        // стабильно работает, если id содержит шестнадцатиричные символы
+        // в противном случае отрабатывает BadRequestError
         throw new NotFoundError('Карточка с указанным _id не найдена');
       }
       if (card.owner.toString() !== req.user._id.toString()) {
         throw new ForbiddenError('Нельзя удалить чужую карточку');
       }
-      Card.findByIdAndRemove(req.params.cardId)
-        .then((deletedCard) => res.status(200).send(deletedCard));
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        throw new BadRequestError('Переданы некорректные данные');
-      }
+      return Card.findByIdAndRemove(req.params.cardId)
+        .then((deletedCard) => {
+          res.status(200).send({ data: deletedCard });
+        });
     })
     .catch(next);
 };
@@ -47,7 +46,7 @@ module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
     .then((data) => {
       if (!data) {
-        throw new NotFoundError('Карточка с указанным _id не найдена');
+        next(new NotFoundError('Карточка с указанным _id не найдена'));
       }
       return res.status(200).send(data);
     })
@@ -63,7 +62,7 @@ module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .then((data) => {
       if (!data) {
-        throw new NotFoundError('Карточка с указанным _id не найдена');
+        next(new NotFoundError('Карточка с указанным _id не найдена'));
       }
       return res.status(200).send(data);
     })
