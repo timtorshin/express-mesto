@@ -32,9 +32,7 @@ module.exports.getUserId = (req, res, next) => {
   User.findOne({ _id: req.params.userId })
     .then((user) => {
       if (!user) {
-        // стабильно работает, если id содержит шестнадцатиричные символы
-        // в противном случае отрабатывает BadRequestError
-        throw new NotFoundError('Пользователь с указанным ID не найден');
+        throw new NotFoundError('Пользователь по указанному _id не найден');
       }
       res.status(200).send(user);
     })
