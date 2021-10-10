@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const validator = require('validator');
 const { celebrate, Joi, errors } = require('celebrate');
 const { login, createUser } = require('./controllers/users');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 const auth = require('./middlewares/auth');
 const error = require('./middlewares/error');
 const NotFoundError = require('./utils/NotFoundError');
@@ -36,6 +37,8 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(requestLogger);
+
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().custom(validEmail),
@@ -58,6 +61,9 @@ app.use(auth);
 app.use('/users', userRouter);
 // http://localhost:3000/cards
 app.use('/cards', cardRouter);
+
+app.use(errorLogger);
+
 // non-existent route
 app.use('*', () => {
   throw new NotFoundError('Запрашиваемый ресурс не найден');
